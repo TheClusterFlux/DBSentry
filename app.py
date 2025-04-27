@@ -18,16 +18,32 @@ last_update_time = 0
 cached_data = None
 
 # Service configurations - These will only be used server-side
-SQLITE_SERVICE = os.getenv('SQLITE_SERVICE', 'http://sqlite:8080')
-MONGODB_URI = os.getenv('MONGODB_URI', 'mongodb://mongodb:27017/')
+SQLITE_SERVICE = os.getenv('SQLITE_SERVICE', 'http://sqlite-service:8080')
+MONGODB_URI = os.getenv('MONGODB_URI', 'mongodb://mongodb-service:27017/')
 MONGODB_DB = os.getenv('MONGODB_DB', 'admin')
+MONGODB_USER = os.getenv('MONGODB_USER', 'root')
+MONGODB_PASSWORD = os.getenv('MONGODB_PASSWORD', '')  # This will come from Kubernetes secret
 
 # Function to safely handle MongoDB connections
 def get_mongodb_stats():
     try:
-        logger.info(f"Attempting to connect to MongoDB at {MONGODB_URI}")
+        # Determine if we need to add authentication to the MongoDB URI
+        if MONGODB_PASSWORD:
+            # Parse the existing URI to add authentication
+            if '://' in MONGODB_URI:
+                protocol_part = MONGODB_URI.split('://')[0]
+                host_part = MONGODB_URI.split('://')[1]
+                auth_uri = f"{protocol_part}://{MONGODB_USER}:{MONGODB_PASSWORD}@{host_part}"
+                logger.info(f"Using authenticated MongoDB connection")
+            else:
+                auth_uri = f"mongodb://{MONGODB_USER}:{MONGODB_PASSWORD}@{MONGODB_URI}"
+        else:
+            auth_uri = MONGODB_URI
+            logger.warning("No MongoDB password provided, trying unauthenticated connection")
         
-        client = MongoClient(MONGODB_URI, serverSelectionTimeoutMS=3000)
+        logger.info(f"Attempting to connect to MongoDB")
+        
+        client = MongoClient(auth_uri, serverSelectionTimeoutMS=3000)
         
         # Verify connection
         client.admin.command('ping')
@@ -159,4 +175,5 @@ if __name__ == '__main__':
     print(f"Starting DBSentry...")
     print(f"SQLite Service URL: {SQLITE_SERVICE}")
     print(f"MongoDB URI: {MONGODB_URI}")
+    print(f"MongoDB Authentication: {'Enabled' if MONGODB_PASSWORD else 'Disabled'}")
     app.run(host='0.0.0.0', port=8080, debug=False)
