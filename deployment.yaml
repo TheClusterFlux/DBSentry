@@ -1,19 +1,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: DBSentry
+  name: db-sentry
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: DBSentry
+      app: db-sentry
   template:
     metadata:
       labels:
-        app: DBSentry
+        app: db-sentry
     spec:
       containers:
-        - name: DBSentry
+        - name: db-sentry
           image: docker.io/keanuwatts/theclusterflux:DBSentry
           imagePullPolicy: Always
           env:
@@ -28,10 +28,10 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: DBSentry
+  name: db-sentry
 spec:
   selector:
-    app: DBSentry
+    app: db-sentry
   ports:
     - protocol: TCP
       port: 8080
@@ -40,7 +40,7 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: DBSentry
+  name: db-sentry
   namespace: default
   annotations:
     nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
@@ -48,16 +48,16 @@ spec:
   ingressClassName: nginx
   tls:
   - hosts:
-    - DBSentry.theclusterflux.com
+    - db-sentry.theclusterflux.com
     secretName: theclusterflux
   rules:
-  - host: DBSentry.theclusterflux.com
+  - host: db-sentry.theclusterflux.com
     http:
       paths:
       - path: /
         pathType: Prefix
         backend:
           service:
-            name: DBSentry
+            name: db-sentry
             port:
               number: 8080
