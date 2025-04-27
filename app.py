@@ -18,8 +18,8 @@ last_update_time = 0
 cached_data = None
 
 # Service configurations - These will only be used server-side
-SQLITE_SERVICE = os.getenv('SQLITE_SERVICE', 'http://sqlite-service:8080')
-MONGODB_URI = os.getenv('MONGODB_URI', 'mongodb://mongodb-service:27017/')
+SQLITE_SERVICE = os.getenv('SQLITE_SERVICE', 'http://sqlite:8080')
+MONGODB_URI = os.getenv('MONGODB_URI', 'mongodb://mongodb:27017/')
 MONGODB_DB = os.getenv('MONGODB_DB', 'admin')
 MONGODB_USER = os.getenv('MONGODB_USER', 'root')
 MONGODB_PASSWORD = os.getenv('MONGODB_PASSWORD', '')  # This will come from Kubernetes secret
