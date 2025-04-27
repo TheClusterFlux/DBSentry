@@ -17,14 +17,21 @@ CACHE_TIMEOUT = 300  # 5 minutes
 last_update_time = 0
 cached_data = None
 
-# Service configurations
+# Service configurations - These will only be used server-side
 SQLITE_SERVICE = os.getenv('SQLITE_SERVICE', 'http://sqlite-service:8080')
 MONGODB_URI = os.getenv('MONGODB_URI', 'mongodb://mongodb-service:27017/')
 MONGODB_DB = os.getenv('MONGODB_DB', 'admin')
 
+# Function to safely handle MongoDB connections
 def get_mongodb_stats():
     try:
-        client = MongoClient(MONGODB_URI, serverSelectionTimeoutMS=5000)
+        logger.info(f"Attempting to connect to MongoDB at {MONGODB_URI}")
+        
+        client = MongoClient(MONGODB_URI, serverSelectionTimeoutMS=3000)
+        
+        # Verify connection
+        client.admin.command('ping')
+        
         db_list = client.list_database_names()
         db_stats = {}
         
@@ -37,43 +44,71 @@ def get_mongodb_stats():
                 for collection_name in db.list_collection_names():
                     collection = db[collection_name]
                     count = collection.count_documents({})
-                    stats = db.command('collStats', collection_name)
-                    size = stats.get('size', 0)
-                    db_size += size
-                    
-                    output_collection_name = collection_name.replace('_', ' ')
-                    collection_stats[output_collection_name] = {
-                        'record_count': count,
-                        'total_size': size,
-                        'storage_size': stats.get('storageSize', 0),
-                        'avg_object_size': stats.get('avgObjSize', 0) if count > 0 else 0
-                    }
+                    try:
+                        stats = db.command('collStats', collection_name)
+                        size = stats.get('size', 0)
+                        db_size += size
+                        
+                        output_collection_name = collection_name.replace('_', ' ')
+                        collection_stats[output_collection_name] = {
+                            'record_count': count,
+                            'total_size': size,
+                            'storage_size': stats.get('storageSize', 0),
+                            'avg_object_size': stats.get('avgObjSize', 0) if count > 0 else 0
+                        }
+                    except Exception as e:
+                        logger.warning(f"Couldn't get stats for {collection_name}: {e}")
+                        collection_stats[collection_name.replace('_', ' ')] = {
+                            'record_count': count,
+                            'total_size': 0,
+                            'storage_size': 0,
+                            'avg_object_size': 0
+                        }
                 
-                server_stats = db.command('serverStatus')
+                # Get server stats if possible
+                try:
+                    server_stats = db.command('serverStatus')
+                    used_space = server_stats.get('mem', {}).get('resident', 0) * 1024 * 1024  # Convert from MB to bytes
+                    free_space = server_stats.get('mem', {}).get('available', 0) * 1024 * 1024  # Convert from MB to bytes
+                except Exception as e:
+                    logger.warning(f"Couldn't get server stats: {e}")
+                    used_space = 0
+                    free_space = 0
+                
                 storage_info = {
                     'total_size': db_size,
-                    'used_space': server_stats.get('mem', {}).get('resident', 0) * 1024 * 1024,  # Convert from MB to bytes
-                    'free_space': server_stats.get('mem', {}).get('available', 0) * 1024 * 1024,  # Convert from MB to bytes
+                    'used_space': used_space,
+                    'free_space': free_space,
                     'collections': collection_stats
                 }
                 db_stats[db_name] = storage_info
                 
         client.close()
+        logger.info("MongoDB stats retrieved successfully")
         return {'status': 'ok', 'databases': db_stats}
+        
     except Exception as e:
-        logger.error(f"MongoDB Error: {str(e)}")
-        return {'status': 'error', 'error': str(e)}
+        error_msg = str(e)
+        logger.error(f"MongoDB Error: {error_msg}")
+        return {'status': 'error', 'error': f"MongoDB connection error: {error_msg}"}
 
+# Function to safely handle SQLite service
 def get_sqlite_stats():
     try:
-        response = requests.get(f"{SQLITE_SERVICE}/status", timeout=5)
+        logger.info(f"Attempting to connect to SQLite service at {SQLITE_SERVICE}")
+        
+        response = requests.get(f"{SQLITE_SERVICE}/status", timeout=3)
         if response.status_code == 200:
+            logger.info("SQLite stats retrieved successfully")
             return response.json()
         else:
-            return {'status': 'error', 'error': f"SQLite service returned status code {response.status_code}"}
+            error_msg = f"SQLite service returned status code {response.status_code}"
+            logger.error(error_msg)
+            return {'status': 'error', 'error': error_msg}
     except requests.RequestException as e:
-        logger.error(f"SQLite Service Error: {str(e)}")
-        return {'status': 'error', 'error': str(e)}
+        error_msg = str(e)
+        logger.error(f"SQLite Service Error: {error_msg}")
+        return {'status': 'error', 'error': f"Failed to connect to SQLite service: {error_msg}"}
 
 def fetch_all_data():
     sqlite_data = get_sqlite_stats()
@@ -114,5 +149,14 @@ def refresh_stats():
     
     return jsonify({'status': 'ok', 'message': 'Cache refreshed'})
 
+@app.route('/health')
+def health_check():
+    """Simple health check endpoint"""
+    return jsonify({'status': 'ok', 'message': 'Service is running'})
+
 if __name__ == '__main__':
+    # Print startup information
+    print(f"Starting DBSentry...")
+    print(f"SQLite Service URL: {SQLITE_SERVICE}")
+    print(f"MongoDB URI: {MONGODB_URI}")
     app.run(host='0.0.0.0', port=8080, debug=False)

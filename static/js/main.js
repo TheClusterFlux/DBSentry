@@ -31,6 +31,9 @@ document.addEventListener('DOMContentLoaded', function() {
             this.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh Data';
         });
     });
+    
+    // Auto-refresh every 5 minutes
+    setInterval(fetchDatabaseStats, 300000);
 });
 
 // Format bytes to a human-readable string
@@ -57,7 +60,11 @@ function updateCurrentTime() {
 }
 
 // Show an error message
-function showError(message) {
+function showError(message, duration = 5000) {
+    // Remove existing error messages
+    const existingErrors = document.querySelectorAll('.error-message');
+    existingErrors.forEach(el => el.remove());
+    
     const errorDiv = document.createElement('div');
     errorDiv.className = 'error-message';
     errorDiv.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`;
@@ -66,13 +73,15 @@ function showError(message) {
     const controls = document.querySelector('.controls');
     controls.insertAdjacentElement('afterend', errorDiv);
     
-    // Auto-remove after 5 seconds
-    setTimeout(() => {
-        errorDiv.remove();
-    }, 5000);
+    // Auto-remove after specified duration
+    if (duration > 0) {
+        setTimeout(() => {
+            errorDiv.remove();
+        }, duration);
+    }
 }
 
-// Fetch all database statistics
+// Fetch all database statistics from our backend API
 function fetchDatabaseStats() {
     fetch('/api/stats')
         .then(response => response.json())
@@ -151,7 +160,7 @@ function renderSqliteData(data) {
                         </div>
                         <div class="stat">
                             <i class="fas fa-columns"></i>
-                            ${tableData.columns.length} Columns
+                            ${tableData.columns ? tableData.columns.length : 0} Columns
                         </div>
                     </div>
                 `;
@@ -165,7 +174,10 @@ function renderSqliteData(data) {
         
         const errorDiv = document.createElement('div');
         errorDiv.className = 'error-message';
-        errorDiv.textContent = data.error || 'Unable to connect to SQLite database';
+        
+        let errorMessage = data.error || 'Unable to connect to SQLite database';
+        errorDiv.innerHTML = `<p>${errorMessage}</p>`;
+        
         sqliteStorage.appendChild(errorDiv);
     }
 }
@@ -285,7 +297,10 @@ function renderMongoData(data) {
         
         const errorDiv = document.createElement('div');
         errorDiv.className = 'error-message';
-        errorDiv.textContent = data.error || 'Unable to connect to MongoDB database';
+        
+        let errorMessage = data.error || 'Unable to connect to MongoDB database';
+        errorDiv.innerHTML = `<p>${errorMessage}</p>`;
+        
         mongoStorage.appendChild(errorDiv);
     }
 }
