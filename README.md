@@ -15,15 +15,15 @@ DBSentry is a lightweight web application for monitoring SQLite and MongoDB data
 - Python 3.6+
 - Docker (for containerization)
 - Kubernetes cluster with:
-  - SQLite service accessible at `http://sqlite-service:8080`
-  - MongoDB service accessible at `mongodb://mongodb-service:27017/`
+  - SQLite service accessible at `http://sqlite:8080`
+  - MongoDB service accessible at `mongodb://mongodb:27017/`
 
 ## Environment Variables
 
 The application can be configured with the following environment variables:
 
-- `SQLITE_SERVICE`: URL of the SQLite service (default: `http://sqlite-service:8080`)
-- `MONGODB_URI`: MongoDB connection string (default: `mongodb://mongodb-service:27017/`)
+- `SQLITE_SERVICE`: URL of the SQLite service (default: `http://sqlite:8080`)
+- `MONGODB_URI`: MongoDB connection string (default: `mongodb://mongodb:27017/`)
 - `MONGODB_DB`: MongoDB database name to use (default: `admin`)
 
 ## Development Setup
@@ -48,7 +48,7 @@ docker build -t dbsentry:latest .
 
 Run the container:
 ```
-docker run -p 8080:8080 -e SQLITE_SERVICE=http://your-sqlite-service:8080 -e MONGODB_URI=mongodb://your-mongodb-service:27017/ dbsentry:latest
+docker run -p 8080:8080 -e SQLITE_SERVICE=http://your-sqlite:8080 -e MONGODB_URI=mongodb://your-mongodb:27017/ dbsentry:latest
 ```
 
 ## Kubernetes Deployment

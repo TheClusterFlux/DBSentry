@@ -18,8 +18,8 @@ last_update_time = 0
 cached_data = None
 
 # Service configurations - These will only be used server-side
-SQLITE_SERVICE = os.getenv('SQLITE_SERVICE', 'http://sqlite-service:8080')
-MONGODB_URI = os.getenv('MONGODB_URI', 'mongodb://mongodb-service:27017/')
+SQLITE_SERVICE = os.getenv('SQLITE_SERVICE', 'http://sqlite:8080')
+MONGODB_URI = os.getenv('MONGODB_URI', 'mongodb://mongodb:27017/')
 MONGODB_DB = os.getenv('MONGODB_DB', 'admin')
 
 # Function to safely handle MongoDB connections
