@@ -13,7 +13,7 @@ spec:
         app: db-sentry
     spec:
       containers:
-        - name: DBSentry
+        - name: db-sentry
           image: docker.io/keanuwatts/theclusterflux:DBSentry
           imagePullPolicy: Always
       imagePullSecrets:
