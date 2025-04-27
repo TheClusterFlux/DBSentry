@@ -1,30 +1,70 @@
-# new-project-template
+# DBSentry - Database Monitoring Dashboard
 
-once read, please replace this readme with one detailing your service, what it does, how to use it, and any other relevant information. 😊
+DBSentry is a lightweight web application for monitoring SQLite and MongoDB databases in a Kubernetes environment. It provides a clean, modern interface to track database metrics including storage usage and entry counts.
 
-This repository is a template for creating new projects with Kubernetes-based deployments. It includes tools and configurations to streamline the setup process.
+## Features
 
-## Key Features
+- **Real-time Status Monitoring**: View the online/offline status of your database services
+- **Storage Metrics**: Track total storage used, available space, and memory usage
+- **Table/Collection Details**: View record counts and storage metrics for individual tables/collections
+- **Caching Mechanism**: Reduces database load by caching metrics with configurable refresh intervals
+- **Responsive Design**: Works on desktop and mobile devices
 
-- **Deployment YAML Generator**: A Bash script (`init.sh`) to generate Kubernetes deployment, service, and optional ingress configurations.
-- **GitHub Actions Workflow**: Automates the deployment of your service to a Kubernetes cluster.
+## Prerequisites
 
-## How to Use
+- Python 3.6+
+- Docker (for containerization)
+- Kubernetes cluster with:
+  - SQLite service accessible at `http://sqlite-service:8080`
+  - MongoDB service accessible at `mongodb://mongodb-service:27017/`
 
-1. **Clone or Use as a Template**:
-   - Clone this repository or use the "Use this template" button on GitHub to create a new repository.
+## Environment Variables
 
-2. **Run the Deployment YAML Generator**:
-   - Execute the `init.sh` script to generate Kubernetes YAML files:
-     ```bash
-     ./init.sh
-     ```
+The application can be configured with the following environment variables:
 
-3. **Add Your Code**:
-   - Add your service code and a `Dockerfile` to the repository.
-   - Ensure the service is exposed on port 8080 or update the generated YAML accordingly.
+- `SQLITE_SERVICE`: URL of the SQLite service (default: `http://sqlite-service:8080`)
+- `MONGODB_URI`: MongoDB connection string (default: `mongodb://mongodb-service:27017/`)
+- `MONGODB_DB`: MongoDB database name to use (default: `admin`)
 
-4. **Trigger Deployment**:
-   - Push changes to the `main` branch to deploy your service using the pre-configured GitHub Actions workflow.
+## Development Setup
 
-This template simplifies Kubernetes deployments and ensures consistency across projects.
+1. Clone the repository
+2. Install dependencies:
+   ```
+   pip install -r requirements.txt
+   ```
+3. Run the application:
+   ```
+   python app.py
+   ```
+4. Open http://localhost:8080 in your browser
+
+## Docker Build & Run
+
+Build the Docker image:
+```
+docker build -t dbsentry:latest .
+```
+
+Run the container:
+```
+docker run -p 8080:8080 -e SQLITE_SERVICE=http://your-sqlite-service:8080 -e MONGODB_URI=mongodb://your-mongodb-service:27017/ dbsentry:latest
+```
+
+## Kubernetes Deployment
+
+The application includes a Kubernetes deployment configuration in `deployment.yaml`. Deploy with:
+```
+kubectl apply -f deployment.yaml
+```
+
+Access the application via the service created in the deployment (default port is 8080).
+
+## API Endpoints
+
+- `GET /api/stats` - Get the current database statistics (from cache or fresh)
+- `POST /api/refresh` - Force a refresh of the cached database statistics
+
+## License
+
+[MIT License](LICENSE)
